@@ -1,0 +1,38 @@
+# ==================================================================
+# config.yaml  --  All tunable constants for the drone maze project.
+# Edit values here instead of hardcoding them in modules.
+# Loaded once at startup by main.py and passed down to each layer.
+# ==================================================================
+
+link:
+  serial_port: "/dev/ttyACM0"   # USB bench testing. Use "/dev/serial0" for GPIO UART in flight.
+  baud_rate: 115200             # INAV default MSP baud rate.
+  loop_hz: 20                   # Main control loop rate (Hz). 10-50 is sensible.
+
+maze:
+  data_file: "world/maze_data.json"  # The editable maze definition.
+  rows: 10
+  cols: 10
+  start: [0, 0]                 # [row, col] start cell.
+  goal: [9, 9]                  # [row, col] goal cell.
+
+geo:
+  # Real-world anchor for the maze grid. The origin cell (0,0) maps to this lat/lon.
+  origin_lat: 0.0               # TODO: set to your field's corner latitude.
+  origin_lon: 0.0               # TODO: set to your field's corner longitude.
+  cell_size_m: 5.0             # Edge length of one maze cell, in meters.
+  heading_offset_deg: 0.0       # Rotation of the maze grid relative to true north.
+
+navigation:
+  waypoint_radius_m: 1.5        # How close (m) counts as "arrived" at a waypoint.
+  cruise_speed: 0.3             # Normalized forward command (0..1) while transiting.
+  target_altitude_m: 3.0        # Altitude to hold during the run.
+
+limits:
+  max_tilt: 0.4                 # Cap on roll/pitch command magnitude (0..1).
+  min_battery_v: 14.0           # Below this, failsafe triggers (set for your pack).
+  max_stale_ms: 500             # If FC data older than this, treat link as lost.
+
+safety:
+  override_aux_channel: 5       # AUX channel (1-based) reserved for manual takeover.
+  log_dir: "flight_logs"

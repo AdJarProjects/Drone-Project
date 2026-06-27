@@ -1,0 +1,12 @@
+{
+  "_comment": "Editable maze definition. Edit this file live; the MazeEditor reloads and re-plans on change. Pick ONE wall format and keep it consistent with world/maze.py.",
+  "rows": 10,
+  "cols": 10,
+  "start": [0, 0],
+  "goal": [9, 9],
+  "blocked_cells": [
+    [1, 1], [1, 2], [1, 3],
+    [3, 5], [4, 5], [5, 5],
+    [7, 2], [7, 3], [7, 4]
+  ]
+}
