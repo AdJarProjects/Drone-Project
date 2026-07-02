@@ -1,4 +1,18 @@
+FOR INLINE:
 apython
 from mavsdk import System
 drone = System() 
-await drone.connect(system_address="udpout://192.168.1.226:14540")
+await drone.connect(system_address="udpout://192.168.1.YOUR IP ADDRESS:14540")
+
+Order Jared did things for non inline/to get connection:
+1: 2nd Pi terminal (Killing all current raspberry pi programs running)
+pkill -9 -f mavsdk_server 
+pkill -9 -f script.py 
+2: Computer terminal (Resetting all current streamed)
+Mavlink stop-all
+mavlink stop -u 14540 
+mavlink start -p -u 14540 -o 14550 -r 4000000
+3: 2nd Pi terminal (Checking Pi connection)
+/home/adamnicolson/Desktop/DroneProject/Drone-Project/venv/lib/python3.13/site-packages/mavsdk/bin/mavsdk_server -p 50051 udpout://192.168.1.YOURSPECIFICIPADDRESS:14540
+4: IF CONNECTED, go to 1st Pi terminal
+python script.py
