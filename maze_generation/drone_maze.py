@@ -5,7 +5,6 @@ import os
 import json
 
 # INITIALIZATION
-
 #Ask the user for the amount of rows and columns
 rows = int(input("Number of rows: "))
 cols = int(input("Number of columns: "))
@@ -154,7 +153,6 @@ for y in range(rows):
             draw.line([(px, py), (px, py + cell_size)], fill="black")
         if right:
             draw.line([(px + cell_size, py), (px + cell_size, py + cell_size)], fill="black")
-
 img = ImageOps.expand(img, border=10, fill="white")
 
 #Saving and displaying image
