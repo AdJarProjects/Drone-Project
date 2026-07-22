@@ -1,17 +1,88 @@
 #Libraries
+from mavsdk import System
 import random
 from PIL import Image, ImageDraw, ImageOps
 import os
 import json
+import math
+import asyncio
 
 # INITIALIZATION
-#Ask the user for the amount of rows and columns
-rows = int(input("Number of rows: "))
-cols = int(input("Number of columns: "))
+
+#Ask the user for the amount of rows and columns, must be greater than 2
+rows, cols = 0, 0
+while rows < 3 or cols < 3:
+    rows = int(input("Number of rows: "))
+    cols = int(input("Number of columns: "))
+    if rows < 3:
+        print("Number of rows must be greater than 2.")
+    if cols < 3:
+        print("Number of columns must be greater than 2.")
+
+#Set to true or false depending on if you are using the drone or not
+using_drone = False
 
 # Set the status of walls to true for all tiles
 # [Top, Bottom, Left, Right]
 grid = [[{"walls": [True, True, True, True]} for _ in range(cols)] for _ in range(rows)]
+
+#COORDINATE GRID CREATION
+
+# Create the grid of coordinates based on the starting location
+coord_grid = [[None for _ in range(cols)] for _ in range(rows)] #initialized grid of GPS coordinates for the maze
+cell_dim = .60 #Cell length and width in m
+
+#Set if the drone is not being used
+set_coord = (0, 0)
+set_bearing = math.radians(0)
+
+#Ensure that the drone is running, then get the starting coordinate and bearing from the FC
+async def get_drone_origin():
+    drone = System()
+    await drone.connect(system_address="") #Depends on our address
+
+    async for state in drone.core.connection_state():
+        if state.is_connected:
+            break
+
+    async for health in drone.telemetry.health():
+        if health.is_global_position_ok:
+            break
+
+    async for drone_pos in drone.telemetry.position():
+        start_coord = (drone_pos.latitude_deg, drone_pos.longitude_deg)
+        break
+
+    async for drone_br in drone.telemetry.attitude_euler():
+        bearing = math.radians(drone_br.yaw_deg % 360)  #Starting cardinal direction of the front of the drone
+        break
+    return start_coord, bearing
+
+# Use flight controller if drone is being used, if not use inputted data
+if using_drone:
+    start_coord, bearing = asyncio.run(get_drone_origin())
+else:
+    start_coord, bearing = set_coord, set_bearing
+
+
+#Flat Earth Approximation to find coordinates for smaller distances
+def find_coord(cell_idx, cell_dim, start_coord, bearing):
+    start_lat, start_long = start_coord
+    row, col = cell_idx
+
+    forward = row * cell_dim
+    right = col * cell_dim
+
+    dlat = (forward * math.cos(bearing) - right * math.sin(bearing)) / 111320.0
+    dlong = (forward * math.sin(bearing) + right * math.cos(bearing)) / (111320.0 * math.cos(math.radians(start_lat)))
+    fin_coord = start_lat + dlat, start_long + dlong
+    return fin_coord
+
+#Find the coordinate for each cell in our grid
+for r in range(rows):
+    for c in range(cols):
+        coord_grid[r][c] = find_coord((r, c), cell_dim, start_coord, bearing)
+
 
 #Create a set of all cells in the bounds inputted
 all_cells = {(y, x) for y in range(rows) for x in range(cols)}
@@ -122,7 +193,10 @@ maze_data = {
     "cols": cols,
     "grid": grid,
     "start": start,
-    "end": end
+    "end": end,
+    "coord_grid": coord_grid,
+    "origin": start_coord,
+    "start_bearing": bearing
 }
 
 with open(os.path.join(folder, "maze_data.json"), "w") as f:
@@ -133,26 +207,26 @@ print("The Maze Entrence is", start)
 print("The Maze Exit is", end)
 
 # Maze image creation
-cell_size = 20
+cell_img_size = 20
 
-img = Image.new("RGB", (cols * cell_size + 1, rows * cell_size + 1), "white")
+img = Image.new("RGB", (cols * cell_img_size + 1, rows * cell_img_size + 1), "white")
 draw = ImageDraw.Draw(img)
 
 for y in range(rows):
     for x in range(cols):
         walls = grid[y][x]["walls"]
-        px, py = x * cell_size, y * cell_size
+        px, py = x * cell_img_size, y * cell_img_size
 
         top, bottom, left, right = walls
 
         if top:
-            draw.line([(px, py), (px + cell_size, py)], fill="black")
+            draw.line([(px, py), (px + cell_img_size, py)], fill="black")
         if bottom:
-            draw.line([(px, py + cell_size), (px + cell_size, py + cell_size)], fill="black")
+            draw.line([(px, py + cell_img_size), (px + cell_img_size, py + cell_img_size)], fill="black")
         if left:
-            draw.line([(px, py), (px, py + cell_size)], fill="black")
+            draw.line([(px, py), (px, py + cell_img_size)], fill="black")
         if right:
-            draw.line([(px + cell_size, py), (px + cell_size, py + cell_size)], fill="black")
+            draw.line([(px + cell_img_size, py), (px + cell_img_size, py + cell_img_size)], fill="black")
 img = ImageOps.expand(img, border=10, fill="white")
 
 #Saving and displaying image
