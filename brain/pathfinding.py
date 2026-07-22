@@ -82,10 +82,42 @@ async def move(drone, cell): #TODO
         if arrived(pos, north, east):
             break
 
-def BFS(): #TODO
-    return
+from collections import deque
+
+def BFS(startcell, goalcell):
+    """Breadth-first search from startcell to goalcell.
+    Returns the shortest path as a list of cells [startcell, ..., goalcell],
+    or None if goalcell is unreachable."""
+    queue = deque([startcell])
+    came_from = {startcell: None}   # visited-set + parent pointers in one
+
+    while queue:
+        cell = queue.popleft()
+
+        if cell == goalcell:
+            # reconstruct path by walking parents back to the start
+            path = []
+            while cell is not None:
+                path.append(cell)
+                cell = came_from[cell]
+            return path[::-1]        # reverse: start -> goal
+
+        for n in neighbors(cell):
+            if n not in came_from:   # first visit is the shortest route
+                came_from[n] = cell
+                queue.append(n)
+
+    return None                      # queue exhausted, goal unreachable
+
+
+def neighbors(cell):
+    """Adjacent cells whose passage the drone has actually sensed."""
+    cy, cx = cell
+    candidates = ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1))
+    return [n for n in candidates if frozenset((cell, n)) in sensed_open] #check if the cell to canadiate passage is in the sensed_open
 async def arrived(): #TODO
     return True
+
 async def explore(drone, start): #DONE
     current = start
     visited.add(current)
