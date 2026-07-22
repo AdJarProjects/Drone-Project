@@ -1,31 +1,62 @@
-import heapq
-import math
+import asyncio
 import json
-import math
-import mavsdk
-def calc_distance(current):
+
+from mavsdk import System
+
+# Module-level state so get_frontier, det_cost, etc. can access them
+grid = None
+goal = None
+visited = set()
+frontiers = set()
+sensed_open = set()
+CELL_SIZE = 0.6  # 60 cm, in meters
+
+
+def load_maze(path="maze_generation/maze_data.json"): #DONE
+    global grid, goal
+    with open(path, "r") as maze_file:
+        maze_data = json.load(maze_file)
+    grid = maze_data["grid"]
+    start = tuple(maze_data["start"])   # JSON stores tuples as lists
+    goal = tuple(maze_data["end"])
+    return start, goal
+def calc_distance(current): #DONE
     y_curr, x_curr = current
     y_goal, x_goal = goal
     y_dist = abs(y_goal - y_curr)
     x_dist = abs(x_goal - x_curr)
     distance = math.sqrt((y_dist ** 2) + (x_dist ** 2)) 
     return distance
-def get_frontier(current): ## IF FRONTIER IN VISITED SET, DONT ADD IT
-    sy = current[0]
-    sx = current[1]
-    while sy>0 and not grid[sy][current[1]]["Walls"]["UP"] and sy < len(grid) -1 == True:
-        sy += 1
-        frontiers.add((sy,x))
-    while sy>0 and not grid[sy][current[1]]["Walls"]["DOWN"] and sy < len(grid) -1 == True:
-        sy-=1
-        frontiers.add((sy,x))
-    while sx>0 and not grid[current[0]][sx]["Walls"]["LEFT"] and sx < len(grid[0]) -1== True:
+def get_frontier(current): ## IF FRONTIER IN VISITED SET, DONT ADD IT, DONE 
+    cy = current[0]
+    cx = current[1]
+    front = []
+    sy = cy
+    while sy>0 and not grid[sy][cx]["Walls"]["UP"]:
+        sensed_open.add(frozenset(((sy,cx),(sy-1,cx)))) 
+        sy -= 1
+    if (sy, cx) not in visited and (sy, cx) != current:
+        front.append((sy, cx))
+    sy = cy
+    while len(grid) -1>sy and not grid[sy][cx]["Walls"]["DOWN"]:
+        sensed_open.add(frozenset(((sy,cx),(sy+1,cx)))) 
+        sy+=1
+    if (sy, cx) not in visited and (sy, cx) != current:
+        front.append((sy, cx))
+    sx = cx
+    while sx>0 and not grid[cy][sx]["Walls"]["LEFT"]:
+        sensed_open.add(frozenset(((cy,sx),(cy,sx-1))))
         sx -=1
-        frontiers.add((y,sx))
-    while sx>0 and not grid[current[0]][sx]["Walls"]["RIGHT"] and sx < len(grid[0]) -1 == True:
+    if (cy, sx) not in visited and (cy, sx) != current:
+        front.append((cy, sx))
+    sx = cx
+    while len(grid[0])-1>sx and not grid[cy][sx]["Walls"]["RIGHT"]:
+        sensed_open.add(frozenset(((cy,sx),(cy,sx+1))))
         sx+=1
-        frontiers.add((y,sx))
-def calc_frontier(current,frontier):
+    if (cy, sx) not in visited and (cy, sx) != current:
+        front.append((cy, sx))
+    return front
+def calc_frontier(current,frontier): # DONE 
     y_curr, x_curr = current
     y_frontier, x_frontier = frontier
     y_dist = abs(y_frontier - y_curr)
@@ -33,54 +64,66 @@ def calc_frontier(current,frontier):
     distance = math.sqrt((y_dist ** 2) + (x_dist ** 2)) 
     return distance
         
-def det_cost(current,frontier):
+def det_cost(current,frontier): # DONE
     #Determine the cost of a given frontier using the Heuristic and distance traveled
     cost = calc_distance(current)+ calc_frontier(current,frontier)
     return cost
+def frontier_calculator(current, frontierlist): #DONE
+       return min(frontierlist, key=lambda f: det_cost(current, f)) #to choose frontier, see which is closest to goal, to choose path from frontier, look in 4 directions, see intersection with wall, see how close that is to goal closest one we go down. then once we are within the gps spot, we check neighbors. 
+  
+async def cell_to_ned(): #TODO
+    return    
+async def move(drone, cell): #TODO
+    north, east = cell_to_ned(cell)                      # your grid→meters transform
+    await drone.offboard.set_position_ned(               # command the move
+        PositionNedYaw(north, east, -1.5, 0.0)
+    )
+    async for pos in drone.telemetry.position_velocity_ned():   # wait for arrival
+        if arrived(pos, north, east):
+            break
 
-async for position in drone.telemetry.position():
-    if gps_info.fix_type >= 3:  # 3D fix or better
-        lat = position.latitude_deg
-        lon = position.longitude_deg
-        alt_abs = position.absolute_altitude_m
-        alt_rel = position.relative_altitude_m
-    asyncio.sleep(.1)
-
-def frontier_calculator(current, frontierlist):
-    pq = []
-    for frontier in frontiers:
-        heapq.heappush(pq, (detcost(current, frontier)), str(frontier))
-    return heapq.pop(0)
-    #to choose frontier, see which is closest to goal, to choose path from frontier, look in 4 directions, see intersection with wall, see how close that is to goal closest one we go down. then once we are within the gps spot, we check neighbors.  
-def move(current,frontier):
-    #move from current to frontier, A*
+def BFS(): #TODO
     return
-def main():
-    with open("maze_generation/maze_data.json", "r") as maze_file:
-        maze_data = json.load(maze_file)
-        num_rows = maze_data["rows"]
-        num_cols = maze_data["cols"]
-        grid = maze_data["grid"]
-        start = tuple(maze_data["start"])   # JSON turns tuples into lists, convert back
-        goal = tuple(maze_data["end"]) 
-        cell_width = 60 # Each cell is 60cm in width and height
-        cell_height = 60
-        current = start
-        frontiers = {}
-        visited = {}
-        frontiers.add(start)
-        visited.add(start)
-        #when the gps moves, revaluate each frontier, when we reach a frontier, we want to decide which frontier to go to next
-        ## FRONTIER CALCULATOR
-        while frontiers:
-            frontiers.add(get_frontier(current))
-            visited.add(current)
-            frontiers.pop(current)
-            bestfrontier = frontier_calculator(current, frontiers)
-            move(current,bestfrontier)
-            current = bestfrontier
+async def arrived(): #TODO
+    return True
+async def explore(drone, start): #DONE
+    current = start
+    visited.add(current)
+    frontiers.update(get_frontier(current))
 
-            
+    while frontiers:
+        bestfrontier = frontier_calculator(current, frontiers)
+        path = BFS(current, bestfrontier)
 
+        if not path:
+            frontiers.discard(bestfrontier)  # unreachable, drop it
+            continue
+
+        for cell in path[1:]:                # skip our own cell
+            await move(drone, current, cell)
+            current = cell
+            if current not in visited:
+                visited.add(current)
+                frontiers.discard(current)
+                frontiers.update(get_frontier(current))
+        if current == goal:                  # optional: stop when goal reached
+            print("Goal reached!")
+            return
+
+    print("Exploration complete — no frontiers left.")
+
+async def main(): #DONE
+    start, _ = load_maze()
+    drone = await connect_drone()
+
+    await drone.action.arm()
+    await drone.action.takeoff()
+    await asyncio.sleep(5)                   # let it stabilize at altitude
+    try:
+        await explore(drone, start)
+    finally:
+        await drone.action.land()
+        
+        
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
