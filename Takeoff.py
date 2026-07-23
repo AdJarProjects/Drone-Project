@@ -1,49 +1,39 @@
 import asyncio
 from mavsdk import System
-from mavsdk.offboard import VelocityBodyYawspeed, OffboardError
 
 async def main():
-    print("Starting...")
     drone = System()
-    print("System created, connecting...")
-    IPaddr = str(230) #226 = jared @ jared house
-    #await drone.connect(system_address="udpout://192.168.1."+IPaddr+":14540")
     await drone.connect(system_address="serial:///dev/serial0:57600")
-    '''Will become: await drone.connect(system_address="serial:///dev/serial0:57600") once we recive the FC'''
-    print("connect() returned!")
     async for state in drone.core.connection_state():
         if state.is_connected:
             print("Connected!")
             break
-    await drone.action.arm()
-    print("Armed!")
-    await drone.action.takeoff()
-    print("Took Off!")
-    await asyncio.sleep(10)
-    # Send setpoints FIRST, before start() — PX4 needs to already be receiving
-    # them or it rejects the mode switch with NO_SETPOINT_SET -- CLAUDE
 
-    # print("Priming offboard setpoint...")
-    # for _ in range(100):
-    #     await drone.offboard.set_velocity_body(VelocityBodyYawspeed(0.0, 0.0, 0.0, 0.0))
-    #     await asyncio.sleep(0.1)
-    # try:
-    #     await drone.offboard.start() #error handling incase the drone offboard mode doesnt work
-    # except OffboardError as error:
-    #     print(f"Starting offboard failed: {error._result.result}") 
-    #     await drone.action.land()
-    #     return
-    # print("START and SPEED: 1N")
-    # for _ in range(100):
-    #     await drone.offboard.set_velocity_body(VelocityBodyYawspeed(10,0,0,0))
-    #     await asyncio.sleep(.1)
-    # print("Speed: -1N")
-    # for _ in range(100):
-    #     await drone.offboard.set_velocity_body(VelocityBodyYawspeed(-10,0,0,0))
-    #     await asyncio.sleep(.1)
-    print("STOP OFFBOARD")
-    await drone.offboard.stop()
-    print("Landing!")
-    await drone.action.land()
-if __name__ == "__main__":
-    asyncio.run(main())
+    print("Waiting for position health...")
+    try:
+        async with asyncio.timeout(60):
+            async for health in drone.telemetry.health():
+                if health.is_global_position_ok and health.is_home_position_ok:
+                    print("Position OK.")
+                    break
+    except TimeoutError:
+        print("No position lock — not arming.")
+        return
+
+    try:
+        await drone.action.arm()
+        print("Armed!")
+    except Exception as e:
+        print("Arm rejected:", e)
+        return
+
+    try:
+        await drone.action.set_takeoff_altitude(1.5)
+        await drone.action.takeoff()
+        print("Takeoff commanded — hovering.")
+        await asyncio.sleep(15)
+    finally:
+        print("Landing!")
+        await drone.action.land()
+
+asyncio.run(main())

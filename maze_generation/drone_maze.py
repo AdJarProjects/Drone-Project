@@ -1,11 +1,11 @@
 #Libraries
-from mavsdk import System
+# from mavsdk import System
 import random
 from PIL import Image, ImageDraw, ImageOps
 import os
 import json
 import math
-import asyncio
+# import asyncio
 
 # INITIALIZATION
 
@@ -20,7 +20,7 @@ while rows < 3 or cols < 3:
         print("Number of columns must be greater than 2.")
 
 #Set to true or false depending on if you are using the drone or not
-using_drone = False
+# using_drone = False
 
 # Set the status of walls to true for all tiles
 # [Top, Bottom, Left, Right]
@@ -29,12 +29,12 @@ grid = [[{"walls": [True, True, True, True]} for _ in range(cols)] for _ in rang
 #COORDINATE GRID CREATION
 
 # Create the grid of coordinates based on the starting location
-coord_grid = [[None for _ in range(cols)] for _ in range(rows)] #initialized grid of GPS coordinates for the maze
+# coord_grid = [[None for _ in range(cols)] for _ in range(rows)] #initialized grid of GPS coordinates for the maze
 cell_dim = .60 #Cell length and width in m
 
 #Set if the drone is not being used
-set_coord = (0, 0)
-set_bearing = math.radians(0)
+# set_coord = (0, 0)
+# set_bearing = math.radians(0)
 
 #Ensure that the drone is running, then get the starting coordinate and bearing from the FC
 async def get_drone_origin():
@@ -59,29 +59,27 @@ async def get_drone_origin():
     return start_coord, bearing
 
 # Use flight controller if drone is being used, if not use inputted data
-if using_drone:
-    start_coord, bearing = asyncio.run(get_drone_origin())
-else:
-    start_coord, bearing = set_coord, set_bearing
+# if using_drone:
+#     start_coord, bearing = asyncio.run(get_drone_origin())
+    # start_coord, bearing = set_coord, set_bearing
 
 
 #Flat Earth Approximation to find coordinates for smaller distances
-def find_coord(cell_idx, cell_dim, start_coord, bearing):
-    start_lat, start_long = start_coord
-    row, col = cell_idx
+# def find_coord(cell_idx, cell_dim, start_coord, bearing):
+#     start_lat, start_long = start_coord
+#     row, col = cell_idx
 
-    forward = row * cell_dim
-    right = col * cell_dim
+#     forward = row * cell_dim
+#     right = col * cell_dim
 
-    dlat = (forward * math.cos(bearing) - right * math.sin(bearing)) / 111320.0
-    dlong = (forward * math.sin(bearing) + right * math.cos(bearing)) / (111320.0 * math.cos(math.radians(start_lat)))
-    fin_coord = start_lat + dlat, start_long + dlong
-    return fin_coord
-
+#     dlat = (forward * math.cos(bearing) - right * math.sin(bearing)) / 111320.0
+#     dlong = (forward * math.sin(bearing) + right * math.cos(bearing)) / (111320.0 * math.cos(math.radians(start_lat)))
+#     fin_coord = start_lat + dlat, start_long + dlong
+#     return fin_coord
 #Find the coordinate for each cell in our grid
-for r in range(rows):
-    for c in range(cols):
-        coord_grid[r][c] = find_coord((r, c), cell_dim, start_coord, bearing)
+# for r in range(rows):
+#     for c in range(cols):
+#         coord_grid[r][c] = find_coord((r, c), cell_dim, start_coord, bearing)
 
 
 #Create a set of all cells in the bounds inputted
@@ -186,7 +184,7 @@ grid[y_start][x_start]["walls"][0] = False
 
 # Create JSON so that solving code is able to read maze
 
-folder = r"C:\Users\adamj\OneDrive\Documents\Professional\Portfolio\Drone Project\Code_Files\Drone-Project\maze_generation"
+folder = os.path.dirname(os.path.abspath(__file__))
 
 maze_data = {
     "rows": rows,
@@ -194,9 +192,10 @@ maze_data = {
     "grid": grid,
     "start": start,
     "end": end,
-    "coord_grid": coord_grid,
-    "origin": start_coord,
-    "start_bearing": bearing
+    "cell_dim": cell_dim
+    # "coord_grid": coord_grid,
+    # "origin": start_coord,
+    # "start_bearing": bearing
 }
 
 with open(os.path.join(folder, "maze_data.json"), "w") as f:
