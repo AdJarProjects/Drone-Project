@@ -3,7 +3,7 @@ from mavsdk import System
 
 async def main():
     drone = System()
-    await drone.connect(system_address="serial:///dev/serial0:57600")
+    await drone.connect(system_address="serial:///dev/serial0:921600")
     async for state in drone.core.connection_state():
         if state.is_connected:
             print("Connected!")
