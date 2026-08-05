@@ -4,6 +4,8 @@ import math
 from collections import deque
 from mavsdk import System
 from mavsdk.offboard import PositionNedYaw, OffboardError
+from pathlib import Path
+REPO_ROOT = Path(__file__).resolve().parent.parent
 # Module-level state so get_frontier, det_cost, etc. can access them
 grid = None
 goal = None
@@ -15,7 +17,8 @@ origin_e = 0.0
 theta = 0.0   # drone yaw at anchor time = maze "+forward" direction
 PASS_TOL   = 1   # half a cell: close enough to count as "passed through"
 SETTLE_TOL = .5   # tight arrival: only for the frontier itself
-def load_maze(path="maze_generation/maze_data.json"): #DONE
+def load_maze(path=None): #DONE
+    path = path or REPO_ROOT / "maze_generation" / "maze_data.json"
     global grid, goal, start, CELL_SIZE
     with open(path, "r") as maze_file:
         maze_data = json.load(maze_file)
@@ -95,7 +98,7 @@ async def move(drone, cell, settle):
         PositionNedYaw(north, east, -1.5, math.degrees(theta)))
     tol = SETTLE_TOL if settle else PASS_TOL
     try:
-        async with asyncio.sleep(7):
+        async with asyncio.timeout(7):
             async for pos in drone.telemetry.position_velocity_ned():
                 if arrived(pos,north,east,tol):
                     return
@@ -108,7 +111,8 @@ def arrived(pos,north,east,tol): #DONE
     return math.hypot(dn,de) < tol
 async def connect_drone(): #DONE
     drone = System()
-    await drone.connect(system_address="serial:///dev/serial0:57600")
+    await drone.connect(system_address="udpin://0.0.0.0:14540")
+    # await drone.connect(system_address="serial:///dev/serial0:57600")
     async for state in drone.core.connection_state():
         if state.is_connected:
             print("Connected!")
