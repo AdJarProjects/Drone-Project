@@ -1,0 +1,2 @@
+python3 maze_generation.py
+python3 pathfinding.py

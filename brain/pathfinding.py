@@ -13,9 +13,8 @@ sensed_open = set()
 origin_n = 0.0
 origin_e = 0.0
 theta = 0.0   # drone yaw at anchor time = maze "+forward" direction
-PASS_TOL   = 0.30   # half a cell: close enough to count as "passed through"
-SETTLE_TOL = 0.15   # tight arrival: only for the frontier itself
-
+PASS_TOL   = 1   # half a cell: close enough to count as "passed through"
+SETTLE_TOL = .5   # tight arrival: only for the frontier itself
 def load_maze(path="maze_generation/maze_data.json"): #DONE
     global grid, goal, start, CELL_SIZE
     with open(path, "r") as maze_file:
@@ -95,9 +94,13 @@ async def move(drone, cell, settle):
     await drone.offboard.set_position_ned(
         PositionNedYaw(north, east, -1.5, math.degrees(theta)))
     tol = SETTLE_TOL if settle else PASS_TOL
-    async for pos in drone.telemetry.position_velocity_ned():
-        if arrived(pos,north,east,tol):
-            return
+    try:
+        async with asyncio.sleep(7):
+            async for pos in drone.telemetry.position_velocity_ned():
+                if arrived(pos,north,east,tol):
+                    return
+    except TimeoutError:
+        print(f"move to {cell}: timed out, continuing")
 
 def arrived(pos,north,east,tol): #DONE
     dn = pos.position.north_m - north ##distance from its current position to the goal

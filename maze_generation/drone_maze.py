@@ -30,7 +30,7 @@ grid = [[{"walls": [True, True, True, True]} for _ in range(cols)] for _ in rang
 
 # Create the grid of coordinates based on the starting location
 # coord_grid = [[None for _ in range(cols)] for _ in range(rows)] #initialized grid of GPS coordinates for the maze
-cell_dim = .60 #Cell length and width in m
+cell_dim = 2 #Cell length and width in m
 
 #Set if the drone is not being used
 # set_coord = (0, 0)
