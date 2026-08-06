@@ -28,10 +28,10 @@ def load_maze(path=None): #DONE
     CELL_SIZE = maze_data["cell_dim"]
     return start, goal
 def calc_distance(current): #DONE
-    y_curr, x_curr = current
+    y_frontier, x_frontier = current
     y_goal, x_goal = goal
-    y_dist = abs(y_goal - y_curr)
-    x_dist = abs(x_goal - x_curr)
+    y_dist = abs(y_goal - y_frontier)
+    x_dist = abs(x_goal - x_frontier)
     distance = math.sqrt((y_dist ** 2) + (x_dist ** 2)) 
     return distance
 def get_frontier(current): ## IF FRONTIER IN VISITED SET, DONT ADD IT, DONE 
