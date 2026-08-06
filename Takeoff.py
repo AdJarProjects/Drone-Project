@@ -21,6 +21,7 @@ async def main():
         return
 
     try:
+        await drone.action.offboard()
         await drone.action.arm()
         print("Armed!")
     except Exception as e:
@@ -28,9 +29,9 @@ async def main():
         return
 
     try:
-        await drone.action.set_takeoff_altitude(1.5)
-        await drone.action.takeoff()
-        print("Takeoff commanded — hovering.")
+        # await drone.action.set_takeoff_altitude(1.5)
+        # await drone.action.takeoff()
+        # print("Takeoff commanded — hovering.")
         await asyncio.sleep(15)
     finally:
         print("Landing!")

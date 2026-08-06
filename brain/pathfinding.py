@@ -88,7 +88,7 @@ def frontier_calculator(current, frontierlist): #DONE
   
 def cell_to_ned(cell): #DONE
     forward = (cell[0] - start[0])*CELL_SIZE
-    right = (cell[1] - start[1])*CELL_SIZE
+    right = -(cell[1] - start[1])*CELL_SIZE
     north = origin_n + forward * math.cos(theta) - right * math.sin(theta)
     east  = origin_e + forward * math.sin(theta) + right * math.cos(theta)
     return north, east
