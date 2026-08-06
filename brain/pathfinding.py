@@ -27,11 +27,11 @@ def load_maze(path=None): #DONE
     goal = tuple(maze_data["end"])
     CELL_SIZE = maze_data["cell_dim"]
     return start, goal
-def calc_distance(current): #DONE
-    y_frontier, x_frontier = current
+def calc_distance(point): #DONE
+    y_point, x_point = point
     y_goal, x_goal = goal
-    y_dist = abs(y_goal - y_frontier)
-    x_dist = abs(x_goal - x_frontier)
+    y_dist = abs(y_goal - y_point)
+    x_dist = abs(x_goal - x_point)
     distance = math.sqrt((y_dist ** 2) + (x_dist ** 2)) 
     return distance
 def get_frontier(current): ## IF FRONTIER IN VISITED SET, DONT ADD IT, DONE 
@@ -81,7 +81,7 @@ async def capture_anchor(drone):
     
 def det_cost(current,frontier): # DONE
     #Determine the cost of a given frontier using the Heuristic and distance traveled
-    cost = calc_distance(current)+ calc_frontier(current,frontier)
+    cost = calc_distance(frontier)+ calc_frontier(current,frontier)
     return cost
 def frontier_calculator(current, frontierlist): #DONE
        return min(frontierlist, key=lambda f: det_cost(current, f)) #to choose frontier, see which is closest to goal, to choose path from frontier, look in 4 directions, see intersection with wall, see how close that is to goal closest one we go down. then once we are within the gps spot, we check neighbors. 
