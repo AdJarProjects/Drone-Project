@@ -111,8 +111,8 @@ def arrived(pos,north,east,tol): #DONE
     return math.hypot(dn,de) < tol
 async def connect_drone(): #DONE
     drone = System()
-    await drone.connect(system_address="udpin://0.0.0.0:14540")
-    # await drone.connect(system_address="serial:///dev/serial0:57600")
+    # await drone.connect(system_address="udpin://0.0.0.0:14540")
+    await drone.connect(system_address="serial:///dev/serial0:57600")
     async for state in drone.core.connection_state():
         if state.is_connected:
             print("Connected!")

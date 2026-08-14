@@ -1,7 +1,1 @@
-# Install on the Raspberry Pi with:  pip install -r requirements.txt
-# uNAVlib is not on PyPI; install it straight from the official repo.
-git+https://github.com/xznhj8129/uNAVlib
-pyserial
-pyyaml
-# Laptop-side only (maze visualization / tests); harmless on the Pi:
-pyamaze
+
