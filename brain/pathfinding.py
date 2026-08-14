@@ -17,6 +17,8 @@ origin_e = 0.0
 theta = 0.0   # drone yaw at anchor time = maze "+forward" direction
 PASS_TOL   = 1   # half a cell: close enough to count as "passed through"
 SETTLE_TOL = .5   # tight arrival: only for the frontier itself
+CONNECTION = "serial:///dev/serial0:921600"  # Pi UART. Use udp://:14540 for SITL.
+TakeoffH=.5
 def load_maze(path=None): #DONE
     path = path or REPO_ROOT / "maze_generation" / "maze_data.json"
     global grid, goal, start, CELL_SIZE
@@ -95,7 +97,7 @@ def cell_to_ned(cell): #DONE
 async def move(drone, cell, settle): 
     north, east = cell_to_ned(cell)
     await drone.offboard.set_position_ned(
-        PositionNedYaw(north, east, -1.5, math.degrees(theta)))
+        PositionNedYaw(north, east, -TakeoffH, math.degrees(theta)))
     tol = SETTLE_TOL if settle else PASS_TOL
     try:
         async with asyncio.timeout(7):
@@ -112,7 +114,7 @@ def arrived(pos,north,east,tol): #DONE
 async def connect_drone(): #DONE
     drone = System()
     # await drone.connect(system_address="udpin://0.0.0.0:14540")
-    await drone.connect(system_address="serial:///dev/serial0:57600")
+    await drone.connect(system_address=CONNECTION)
     async for state in drone.core.connection_state():
         if state.is_connected:
             print("Connected!")
@@ -197,13 +199,13 @@ async def main(): #DONE
         print("Arm rejected:", e)
         return
     await capture_anchor(drone)
-    await drone.action.set_takeoff_altitude(1.5)
+    await drone.action.set_takeoff_altitude(TakeoffH)
     await drone.action.takeoff()
     await asyncio.sleep(8)
     try:
         for _ in range(20):
             await drone.offboard.set_position_ned(
-                PositionNedYaw(origin_n, origin_e, -1.5, math.degrees(theta)))
+                PositionNedYaw(origin_n, origin_e, -TakeoffH, math.degrees(theta)))
             await asyncio.sleep(0.05)
         try:
             await drone.offboard.start()
