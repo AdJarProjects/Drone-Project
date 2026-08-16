@@ -18,7 +18,7 @@ theta = 0.0   # drone yaw at anchor time = maze "+forward" direction
 PASS_TOL   = 1   # half a cell: close enough to count as "passed through"
 SETTLE_TOL = .5   # tight arrival: only for the frontier itself
 CONNECTION = "serial:///dev/serial0:921600"  # Pi UART. Use udp://:14540 for SITL.
-TakeoffH=.5
+TakeoffH=1.5
 def load_maze(path=None): #DONE
     path = path or REPO_ROOT / "maze_generation" / "maze_data.json"
     global grid, goal, start, CELL_SIZE
